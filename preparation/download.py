@@ -54,7 +54,7 @@ def download_basic_info():
 
 
 def select_items(items, single=True):
-    """Let user select items and retutn their indexes.
+    """Let user select items and return their indexes.
 
     :param items:
     :param single:
@@ -152,7 +152,12 @@ def download_molecules(info):
     datasets = select_datasets(info, False)
     for key in datasets:
         item = info[key]
+        # Download molecules.
         url = _base_uri + item['ref'] + '/molecules/sdf.zip'
+        path = _root_path + 'datasets/' + item['dir'] + '/molecules/'
+        download_and_unpack(url, path)
+        # Download names.
+        url = _base_uri + item['ref'] + '/molecules/name.zip'
         path = _root_path + 'datasets/' + item['dir'] + '/molecules/'
         download_and_unpack(url, path)
 
@@ -180,8 +185,12 @@ def download_all(info):
     :return:
     """
     for item in info.values():
-        # Download dataset.
+        # Download molecules.
         url = _base_uri + item['ref'] + '/molecules/sdf.zip'
+        path = _root_path + 'datasets/' + item['dir'] + '/molecules/'
+        download_and_unpack(url, path)
+        # Download names.
+        url = _base_uri + item['ref'] + '/molecules/name.zip'
         path = _root_path + 'datasets/' + item['dir'] + '/molecules/'
         download_and_unpack(url, path)
         # Download definitions.
