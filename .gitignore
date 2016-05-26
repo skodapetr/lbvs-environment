@@ -1,10 +1,10 @@
-# Set the default behavior, in case people don't have core.autocrlf set.
-* text eol=lf
-
 # All files/directiries starting with dot.
 .*
 
-# Working directoriew.
+# Working directories.
 /datasets
 /temp
 /results
+
+# Python cache.
+*.pyc
