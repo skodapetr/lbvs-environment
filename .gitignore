@@ -1,10 +1,8 @@
 # All files/directiries starting with dot.
 .*
 
-# Working directories.
-/datasets
-/temp
-/results
+# Working and data directories.
+/data
 
 # Python cache.
 *.pyc
