@@ -154,6 +154,16 @@ def download_selections(info):
             download_and_unpack(url, path)
 
 
+def download_collections():
+    """Download collections.
+
+    :return:
+    """
+    path = _root_path + 'data/collections/00'
+    url = _base_uri + 'collections/00.zip'
+    download_and_unpack(url, path)
+
+
 def download_all(info):
     """Download all datasets and selections.
 
@@ -171,6 +181,7 @@ def download_all(info):
             url = _base_uri + item['ref'] + '/selections/' + \
                   selection + '.zip'
             download_and_unpack(url, path)
+    download_collections()
 
 
 def main():
@@ -178,6 +189,7 @@ def main():
     # Main menu.
     options = ['Download molecules for datasets',
                'Download selections for datasets',
+               'Download collections',
                'Download all',
                'Exit']
     while True:
@@ -187,8 +199,10 @@ def main():
         elif option == 1:
             download_selections(info)
         elif option == 2:
-            download_all(info)
+            download_collections()
         elif option == 3:
+            download_all(info)
+        elif option == 4:
             break
 
 
