@@ -33,22 +33,9 @@ def download_basic_info():
 
     :return:
     """
-    info = {}
     print('Downloading basic info ... ', end='')
     url = _base_uri + '/info.json'
-    root_info = json.loads(request.urlopen(url).read().decode('utf-8'))
-    for item in root_info['datasets']:
-        url = _base_uri + item['ref'] + '/info.json'
-        item_content = request.urlopen(url).read().decode('utf-8')
-        info_path = _root_path + 'datasets/' + item['dir'] + '/info.json'
-        create_if_not_exists(os.path.dirname(info_path))
-        info[item['dir']] = {
-            'ref': item['ref'],
-            'dir': item['dir'],
-            'value': json.loads(item_content)
-        }
-        with open(info_path, 'w') as stream:
-            json.dump(info[item['dir']]['value'], stream, indent=1)
+    info = json.loads(request.urlopen(url).read().decode('utf-8'))
     print('done')
     return info
 
@@ -69,7 +56,7 @@ def select_items(items, single=True):
         counter += 1
         print(' ', counter, ') ', name, sep='')
     while True:
-        print(' >', end='')
+        print(' > ', end='')
         try:
             value = input()
             if single:
@@ -96,13 +83,9 @@ def select_datasets(info, single=True):
     """
     data = []
     data_names = []
-    for key in sorted(info.keys()):
-        item = info[key]
-        name = item['value']['dataset']['name']
-        if name == '':
-            name = item['value']['dataset']['id']
-        data.append(key)
-        data_names.append(name)
+    for dataset in info['datasets']:
+        data.append(dataset)
+        data_names.append(dataset['name'])
     selected = select_items(data_names, single)
     return [data[index] for index in selected]
 
@@ -150,15 +133,9 @@ def download_molecules(info):
     :return:
     """
     datasets = select_datasets(info, False)
-    for key in datasets:
-        item = info[key]
-        # Download molecules.
+    for item in datasets:
         url = _base_uri + item['ref'] + '/molecules/sdf.zip'
-        path = _root_path + 'datasets/' + item['dir'] + '/molecules/'
-        download_and_unpack(url, path)
-        # Download names.
-        url = _base_uri + item['ref'] + '/molecules/name.zip'
-        path = _root_path + 'datasets/' + item['dir'] + '/molecules/'
+        path = _root_path + '/data/datasets/' + item['dir'] + '/molecules/'
         download_and_unpack(url, path)
 
 
@@ -169,12 +146,11 @@ def download_selections(info):
     :return:
     """
     datasets = select_datasets(info, False)
-    for key in datasets:
-        item = info[key]
-        path = _root_path + 'datasets/' + item['dir'] + '/selections/'
-        for selection in item['value']['selections']:
+    for item in datasets:
+        path = _root_path + 'data/datasets/' + item['dir'] + '/selections/'
+        for selection in item['selections']:
             url = _base_uri + item['ref'] + '/selections/' + \
-                  selection['name'] + '.zip'
+                  selection + '.zip'
             download_and_unpack(url, path)
 
 
@@ -184,20 +160,16 @@ def download_all(info):
     :param info:
     :return:
     """
-    for item in info.values():
+    for item in info['datasets']:
         # Download molecules.
         url = _base_uri + item['ref'] + '/molecules/sdf.zip'
-        path = _root_path + 'datasets/' + item['dir'] + '/molecules/'
+        path = _root_path + 'data/datasets/' + item['dir'] + '/molecules/'
         download_and_unpack(url, path)
-        # Download names.
-        url = _base_uri + item['ref'] + '/molecules/name.zip'
-        path = _root_path + 'datasets/' + item['dir'] + '/molecules/'
-        download_and_unpack(url, path)
-        # Download definitions.
-        path = _root_path + 'datasets/' + item['dir'] + '/selections/'
-        for selection in item['value']['selections']:
+        # Download selections.
+        path = _root_path + 'data/datasets/' + item['dir'] + '/selections/'
+        for selection in item['selections']:
             url = _base_uri + item['ref'] + '/selections/' + \
-                  selection['name'] + '.zip'
+                  selection + '.zip'
             download_and_unpack(url, path)
 
 
