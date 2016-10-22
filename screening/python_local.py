@@ -8,6 +8,7 @@ import argparse
 import logging
 import os
 import json
+import time
 
 __author__ = 'Petr Škoda'
 __license__ = 'X11'
@@ -48,15 +49,15 @@ def load_molecules(selection_path, selection, cache):
         return
     logging.info('Loading molecules ... ')
     cache['files'] = source_files
+    # Create new cache and delete the old one before loading new data.
     molecules = {}
+    cache['molecules'] = molecules
     for path in source_files:
         for molecule in rdkit.Chem.SDMolSupplier(str(path)):
             if molecule is None:
                 logging.error("Can't load molecule.")
                 continue
             molecules[molecule.GetProp('_Name')] = molecule
-    # Store results.
-    cache['molecules'] = molecules
     logging.info('Loading molecules ... done : %d', len(molecules))
 
 
@@ -70,7 +71,7 @@ def screen_selection_method(module, output_path, selection, cache):
     :return:
     """
     # Perform screening.
-    logging.info('Screening ...')
+    logging.info('Screening : %s', module.metadata['id'])
     # def screening(selection, molecules):
     molecules = cache['molecules']
     # Select train set.
@@ -82,7 +83,6 @@ def screen_selection_method(module, output_path, selection, cache):
                    if item['id'] in molecules]
     model = module.create_model(test_ligands, test_decoys)
     # Perform screening.
-    logging.info('Screening ...')
     scores = []
     for item in selection['data']['test']:
         if not item['id'] in molecules:
@@ -91,7 +91,6 @@ def screen_selection_method(module, output_path, selection, cache):
             'molecule': item['id'],
             'score': module.compute_score(model, molecules[item['id']])
         })
-    logging.info('Screening ... done')
     # Write results.
     results = {
         'dataset': selection['metadata']['dataset'],
@@ -101,9 +100,6 @@ def screen_selection_method(module, output_path, selection, cache):
         'method': module.metadata['id'],
         'scores': scores
     }
-    # return result
-    # results = method.screening(selection, cache['molecules'])
-    logging.info('Screening ... done')
     # Save results
     if not os.path.exists(os.path.dirname(output_path)):
         os.makedirs(os.path.dirname(output_path))
@@ -111,13 +107,50 @@ def screen_selection_method(module, output_path, selection, cache):
         json.dump(results, stream)
 
 
-def screening(methods, selections):
+def create_selection_id(metadata, include_instance):
+    """For given selection metadata create full ID.
+
+    :param metadata:
+    :param include_instance:
+    :return:
+    """
+    id = metadata['dataset'] + '/' + metadata['selection'] + '/' + \
+         metadata['group']
+    if include_instance:
+        id += '/' + metadata['id']
+    return id
+
+
+def something_to_screen(methods, data_directory, selection):
+    """Check if there are some data to screen.
+
+    :param methods:
+    :param data_directory:
+    :param selection:
+    :return: True if there is something to screen.
+    """
+    for method_name in methods:
+        output_path = data_directory + '/screening/' + \
+                      method_name[0:-3] + '/' + \
+                      create_selection_id(selection['metadata'], True) + \
+                      '.json'
+        if not os.path.exists(output_path):
+            return True
+    return False
+
+
+def screening(methods, selections, time_end=-1):
     """Perform screening be importing the Python script.
 
     :param methods:
     :param selections:
+    :param time_end: Time before which the screening should end.
     :return:
     """
+    logging.info('Screening ...')
+    if len(selections) == 0:
+        raise Exception('No selection file found!')
+    #
     methods_modules = import_methods(methods)
     # Use caching for working with molecules.
     cache = {
@@ -127,31 +160,53 @@ def screening(methods, selections):
     }
     data_directory = os.path.dirname(os.path.realpath(__file__)) + '/../data/'
     for selection_path in selections:
-        logging.info('Selection: %s', selection_path)
         # TODO Add error check here
         with open(selection_path, 'r') as stream:
             selection = json.load(stream)
-        # TODO Check for output, so we do not screen the same data twice !
+        # Check if there is something to screen in this group.
+        if not something_to_screen(methods, data_directory, selection):
+            continue
+        # Use directory based lock.
+        lock_path = data_directory + '/lock/' + \
+                    create_selection_id(selection['metadata'], False)
+        try:
+            os.makedirs(lock_path)
+        except:
+            # Other thread is computing this representation.
+            continue
+        #
+        logging.info('Selection: %s', selection_path)
         load_molecules(selection_path, selection, cache)
         for method_name in methods:
             # Remove the .py extension from name before use.
-            id = method_name[0:-3] + '/' + selection['metadata']['id']
-            output_path = data_directory + '/screening/' + id + '.json'
-            lock_path = data_directory + '/lock/' + id
-            # Use directory based lock.
-            try:
-                os.makedirs(lock_path)
-            except Exception as ex:
-                # Other thread is computing this representation.
-                return
+            output_path = data_directory + '/screening/' + \
+                          method_name[0:-3] + '/' + \
+                          create_selection_id(selection['metadata'], True) + \
+                          '.json'
+            # Check if the result already exists.
+            if os.path.exists(output_path):
+                continue
             #
             try:
+                screen_start = time.time()
                 screen_selection_method(methods_modules[method_name],
                                         output_path, selection, cache)
-            finally:
-                # Release lock.
-                os.rmdir(lock_path)
-    pass
+                screen_elapsed = time.time() - screen_start
+            except:
+                logging.exception('Screening failed.')
+                continue
+            # Check time.
+            if not time_end == -1:
+                time_of_next = time.time() + (screen_elapsed * 1.1)
+                if time_of_next > time_end:
+                    # Release lock.
+                    os.rmdir(lock_path)
+                    # And quit.
+                    logging.info('Screening ... done (timeout)')
+                    return
+        # Release lock.
+        os.rmdir(lock_path)
+    logging.info('Screening ... done')
 
 
 def find_selection_files(root):
@@ -175,8 +230,6 @@ def find_selection_files(root):
             continue
         if file_name.endswith('.json') and file_name.startswith('s_'):
             result.append(file_path)
-    if len(result) == 0:
-        raise Exception('No selection file found!')
     return result
 
 
@@ -185,24 +238,29 @@ def load_configuration():
 
     :return:
     """
-    default_path_to_output = os.path.dirname(os.path.realpath(__file__)) + \
-                             '/../data/output/screening/'
     parser = argparse.ArgumentParser(
         description='Perform screening on local machine.')
     parser.add_argument('-i', type=str, dest='input', required=True,
                         help='Relative path from script file to selections.')
     parser.add_argument('-m', type=str, dest='methods', required=True,
                         help='Comma separated names of methods files.')
+    parser.add_argument('-t', type=int, dest='time', required=False, default=-1,
+                        help='Time limit in minutes.')
     return vars(parser.parse_args());
 
 
 def main():
     logging.basicConfig(
         level=logging.DEBUG,
-        format='%(asctime)s [%(levelname)s] %(module)s - %(message)s',
+        format='%(asctime)s [%(levelname)s] - %(message)s',
         datefmt='%H:%M:%S')
     #
     config = load_configuration()
+    # Compute end time.
+    time_end = -1
+    if not config['time'] == -1:
+        time_end = time.time() + config['time'] * 60
+        pass
     # Prepare list of methods.
     methods = []
     method_directory = os.path.dirname(os.path.realpath(__file__)) + '/methods/'
@@ -215,7 +273,7 @@ def main():
         else:
             methods.append(x + '.py')
     # Get selections and methods to screen.
-    screening(methods, find_selection_files(config['input']))
+    screening(methods, find_selection_files(config['input']), time_end)
 
 
 if __name__ == '__main__':
