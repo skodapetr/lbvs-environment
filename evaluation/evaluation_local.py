@@ -334,7 +334,7 @@ def main():
             output_stream.write('"')
             output_stream.write('","'.join(entry_to_line(result_entry)))
             output_stream.write('"\n')
-            if time_end < time.time():
+            if -1 < time_end < time.time():
                 logging.info('timeout')
                 break
     logging.info('Evaluating ... done')
