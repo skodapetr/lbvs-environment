@@ -12,7 +12,7 @@ Evaluates quality of the individual methods used in the screening phase.
 
 ## Usage example
 ```
-# Download datasets - Press '4' to download all, exit the script by pressing '5' when the download is finished.
+# Download datasets - Choose download all, when done exit the script.
 python preparation/download.py
 # Perform screening.
 cd screening
