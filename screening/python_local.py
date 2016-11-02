@@ -256,8 +256,8 @@ def load_configuration():
     parser.add_argument('-t', type=int, dest='time', required=False, default=-1,
                         help='Time limit in minutes.')
     parser.add_argument('-c', type=str, dest='collection', required=False,
-                        help='Collection file.')
-    return vars(parser.parse_args());
+                        help='Path to collection file.')
+    return vars(parser.parse_args())
 
 
 def main():
