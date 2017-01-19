@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Iterate over results in data/screening and perform evaluation.
+"""Evaluate results of the screening.
 
-The output is stored into data/evaluation.
+Iterate over results in data/screening and perform evaluation. The output is
+stored into data/evaluation.
 """
 
 import os
@@ -72,8 +73,7 @@ def load_groups():
                 group = data['metadata']['id']
             if 'group' in data['metadata']:
                 group = data['metadata']['group']
-            id = data['metadata']['dataset'] + \
-                 data['metadata']['selection'] + \
+            id = data['metadata']['dataset'] + data['metadata']['selection'] + \
                  group
             results[id] = data
     logging.info('Loading groups ... done (%d)', len(results))
@@ -102,9 +102,16 @@ def header():
 
     :return:
     """
-    return ['path', 'dataset', 'selection', 'group', 'instance', 'method',
-            'w-auc', 'w-ef-0.005', 'w-ef-0.01', 'w-ef-0.02', 'w-ef-0.05',
-            'b-auc', 'b-ef-0.005', 'b-ef-0.01', 'b-ef-0.02', 'b-ef-0.05']
+    return [
+        'path', 'dataset', 'selection', 'group', 'instance', 'method',
+        'actives', 'decoys',
+        'w-auc', 'w-ef-0.005', 'w-ef-0.01', 'w-ef-0.02', 'w-ef-0.05',
+        'w-rie-0.005', 'w-rie-0.01', 'w-rie-0.02', 'w-rie-0.05',
+        'w-bedroc-0.005', 'w-bedroc-0.01', 'w-bedroc-0.02', 'w-bedroc-0.05',
+        'b-auc', 'b-ef-0.005', 'b-ef-0.01', 'b-ef-0.02', 'b-ef-0.05',
+        'b-rie-0.005', 'b-rie-0.01', 'b-rie-0.02', 'b-rie-0.05',
+        'b-bedroc-0.005', 'b-bedroc-0.01', 'b-bedroc-0.02', 'b-bedroc-0.05'
+    ]
 
 
 def entry_to_line(entry):
@@ -113,18 +120,9 @@ def entry_to_line(entry):
     :param entry:
     :return:
     """
-    values = [entry['path'], entry['dataset'], entry['selection'],
-              entry['group'], entry['instance'], entry['method'],
-              entry['w-auc'],
-              entry['w-ef-0.005'],
-              entry['w-ef-0.01'],
-              entry['w-ef-0.02'],
-              entry['w-ef-0.05'],
-              entry['b-auc'],
-              entry['b-ef-0.005'],
-              entry['b-ef-0.01'],
-              entry['b-ef-0.02'],
-              entry['b-ef-0.05']]
+    values = []
+    for key in header():
+        values.append(entry[key])
     return [str(item) for item in values]
 
 
@@ -181,10 +179,10 @@ def compute_measures(scores, params=[0.005, 0.01, 0.02, 0.05]):
     for value in params:
         output['ef-' + str(value)] = \
             Scoring.CalcEnrichment(scores, 'activity', [value])[0]
-        # output['bedroc-' + str(value)] = \
-        #     Scoring.CalcBEDROC(scores, 'activity', value)
-        # output['rie-' + str(value)] = \
-        #     Scoring.CalcRIE(scores, 'activity', value)
+        output['bedroc-' + str(value)] = \
+            Scoring.CalcBEDROC(scores, 'activity', value)
+        output['rie-' + str(value)] = \
+            Scoring.CalcRIE(scores, 'activity', value)
     return output
 
 
@@ -214,13 +212,17 @@ def evaluate_result_file(result_path, groups):
         decoys_names.add(item['id'])
     # Add activity to molecules.
     missing_activity = False
+    actives_count = 0
+    decoys_count = 0
     for score in result['scores']:
         is_ligand = score['molecule'] in ligand_names
         is_decoy = score['molecule'] in decoys_names
         if is_ligand and not is_decoy:
             score['activity'] = 1
+            actives_count += 1
         elif not is_ligand and is_decoy:
             score['activity'] = 0
+            decoys_count += 1
         else:
             logging.error('Missing: "%s" in "%s"',
                           score['molecule'], result_path)
@@ -233,8 +235,8 @@ def evaluate_result_file(result_path, groups):
                                             score_compare_best),
                                         reverse=True))
     eval_worst = compute_measures(sorted(result['scores'],
-                                        key=functools.cmp_to_key(
-                                            score_compare_worst),
+                                         key=functools.cmp_to_key(
+                                             score_compare_worst),
                                          reverse=True))
     # Store results to object.
     return {
@@ -243,16 +245,34 @@ def evaluate_result_file(result_path, groups):
         'selection': result['selection'],
         'instance': result['instance'],
         'method': result['method'],
+        'actives': actives_count,
+        'decoys': decoys_count,
         'w-auc': eval_worst['auc'],
         'w-ef-0.005': eval_worst['ef-0.005'],
         'w-ef-0.01': eval_worst['ef-0.01'],
         'w-ef-0.02': eval_worst['ef-0.02'],
         'w-ef-0.05': eval_worst['ef-0.05'],
+        'w-rie-0.005': eval_worst['rie-0.005'],
+        'w-rie-0.01': eval_worst['rie-0.01'],
+        'w-rie-0.02': eval_worst['rie-0.02'],
+        'w-rie-0.05': eval_worst['rie-0.05'],
+        'w-bedroc-0.005': eval_worst['bedroc-0.005'],
+        'w-bedroc-0.01': eval_worst['bedroc-0.01'],
+        'w-bedroc-0.02': eval_worst['bedroc-0.02'],
+        'w-bedroc-0.05': eval_worst['bedroc-0.05'],
         'b-auc': eval_best['auc'],
         'b-ef-0.005': eval_best['ef-0.005'],
         'b-ef-0.01': eval_best['ef-0.01'],
         'b-ef-0.02': eval_best['ef-0.02'],
-        'b-ef-0.05': eval_best['ef-0.05']
+        'b-ef-0.05': eval_best['ef-0.05'],
+        'b-rie-0.005': eval_worst['rie-0.005'],
+        'b-rie-0.01': eval_worst['rie-0.01'],
+        'b-rie-0.02': eval_worst['rie-0.02'],
+        'b-rie-0.05': eval_worst['rie-0.05'],
+        'b-bedroc-0.005': eval_worst['bedroc-0.005'],
+        'b-bedroc-0.01': eval_worst['bedroc-0.01'],
+        'b-bedroc-0.02': eval_worst['bedroc-0.02'],
+        'b-bedroc-0.05': eval_worst['bedroc-0.05']
     }
 
 
@@ -266,9 +286,12 @@ def read_results(path):
     paths = set()
     with open(path) as stream:
         csv_reader = csv.reader(stream, delimiter=',', quotechar='"')
-        #columns = csv_reader.__next__()
-        columns = csv_reader.next()
+        first_line = True
         for row in csv_reader:
+            if first_line:
+                columns = row
+                first_line = False
+                continue
             entry = line_to_entry(columns, row)
             results.append(entry)
             paths.add(entry['path'])
@@ -334,7 +357,7 @@ def main():
             output_stream.write('"')
             output_stream.write('","'.join(entry_to_line(result_entry)))
             output_stream.write('"\n')
-            if time_end < time.time():
+            if -1 < time_end < time.time():
                 logging.info('timeout')
                 break
     logging.info('Evaluating ... done')

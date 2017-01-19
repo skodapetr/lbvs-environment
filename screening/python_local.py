@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Perform screening on the local machine.
+"""Perform screening on with python methods on local machine.
 
 """
 
@@ -18,8 +18,8 @@ __email__ = 'skoda@ksi.mff.cuni.cz'
 def import_methods(methods_names):
     """Import given methods specified by method names an return them.
 
-    :param methods_names:
-    :return:
+    :param methods_names: Relative path in ./methods directory.
+    :return: Dictionary of loaded modules.
     """
     import imp
     method_directory = os.path.dirname(os.path.realpath(__file__)) + '/methods/'
@@ -30,16 +30,15 @@ def import_methods(methods_names):
     return methods_modules
 
 
-def load_molecules(selection_path, selection, cache):
-    """Load molecules for given selection into cache.
+def load_molecules(selection_root, selection, cache):
+    """Load molecules into cache.
 
-    :param selection_path:
-    :param selection:
-    :param cache:
-    :return:
+    :param selection_root: Path to selection root directory.
+    :param selection: Data of selection to load molecules for.
+    :param cache: Cache to load molecules into.
     """
     import rdkit
-    molecule_path = selection_path[0:selection_path.rfind('selections')] \
+    molecule_path = selection_root[0:selection_root.rfind('selections')] \
                     + '/molecules/sdf/'
     molecules_file = selection['data']['files']
     source_files = [molecule_path + item + '.sdf' for item in molecules_file]
@@ -62,17 +61,15 @@ def load_molecules(selection_path, selection, cache):
 
 
 def screen_selection_method(module, output_path, selection, cache):
-    """Use methods from given module to perform LBVS.
+    """Perform Ligands-Based Virtual Screening.
 
-    :param module:
-    :param output_path:
-    :param selection:
-    :param cache:
+    :param module: Module of method to use.
+    :param output_path: Path where to store output file.
+    :param selection: Data of selection to screen.
+    :param cache: Cache with molecules.
     :return:
     """
-    # Perform screening.
     logging.info('Screening : %s', module.metadata['id'])
-    # def screening(selection, molecules):
     molecules = cache['molecules']
     # Select train set.
     test_ligands = [molecules[item['id']]
@@ -107,8 +104,8 @@ def screen_selection_method(module, output_path, selection, cache):
         json.dump(results, stream)
 
 
-def create_selection_id(metadata, include_instance):
-    """For given selection metadata create full ID.
+def get_selection_id(metadata, include_instance):
+    """For given selection return its ID.
 
     :param metadata:
     :param include_instance:
@@ -132,7 +129,7 @@ def something_to_screen(methods, data_directory, selection):
     for method_name in methods:
         output_path = data_directory + '/screening/' + \
                       method_name[0:-3] + '/' + \
-                      create_selection_id(selection['metadata'], True) + \
+                      get_selection_id(selection['metadata'], True) + \
                       '.json'
         if not os.path.exists(output_path):
             return True
@@ -155,20 +152,18 @@ def screening(methods, selections, time_end=-1):
     # Use caching for working with molecules.
     cache = {
         'molecules': {},
-        # Cache for loaded files.
         'files': {}
     }
     data_directory = os.path.dirname(os.path.realpath(__file__)) + '/../data/'
     for selection_path in selections:
-        # TODO Add error check here
         with open(selection_path, 'r') as stream:
             selection = json.load(stream)
         # Check if there is something to screen in this group.
         if not something_to_screen(methods, data_directory, selection):
             continue
         # Use directory based lock.
-        lock_path = data_directory + '/lock/' + \
-                    create_selection_id(selection['metadata'], False)
+        lock_path = data_directory + '/lock/' + get_selection_id(
+            selection['metadata'], False)
         try:
             os.makedirs(lock_path)
         except:
@@ -181,7 +176,7 @@ def screening(methods, selections, time_end=-1):
             # Remove the .py extension from name before use.
             output_path = data_directory + '/screening/' + \
                           method_name[0:-3] + '/' + \
-                          create_selection_id(selection['metadata'], True) + \
+                          get_selection_id(selection['metadata'], True) + \
                           '.json'
             # Check if the result already exists.
             if os.path.exists(output_path):
@@ -233,6 +228,20 @@ def find_selection_files(root):
     return result
 
 
+def load_collection_file(path):
+    """Read collection and return referenced selection files.
+
+    :param path:
+    :return:
+    """
+    result = []
+    with open(path, 'r') as stream:
+        for line in stream:
+            directory = '../data/datasets/' + line.rstrip()
+            result.extend(find_selection_files(directory))
+    return result
+
+
 def load_configuration():
     """Load and return the configuration.
 
@@ -240,13 +249,15 @@ def load_configuration():
     """
     parser = argparse.ArgumentParser(
         description='Perform screening on local machine.')
-    parser.add_argument('-i', type=str, dest='input', required=True,
+    parser.add_argument('-i', type=str, dest='input', required=False,
                         help='Relative path from script file to selections.')
     parser.add_argument('-m', type=str, dest='methods', required=True,
                         help='Comma separated names of methods files.')
     parser.add_argument('-t', type=int, dest='time', required=False, default=-1,
                         help='Time limit in minutes.')
-    return vars(parser.parse_args());
+    parser.add_argument('-c', type=str, dest='collection', required=False,
+                        help='Path to collection file.')
+    return vars(parser.parse_args())
 
 
 def main():
@@ -272,8 +283,17 @@ def main():
                     methods.append(x[0:-1] + file_name)
         else:
             methods.append(x + '.py')
-    # Get selections and methods to screen.
-    screening(methods, find_selection_files(config['input']), time_end)
+    # Get selections.
+    selections = []
+    if config['input'] is not None:
+        selections = find_selection_files(config['input'])
+    elif config['collection'] is not None:
+        selections = load_collection_file(config['collection'])
+    else:
+        print('Missing input. Either "-i" or "-c" must be set.')
+        return
+    # Screen.
+    screening(methods, selections, time_end)
 
 
 if __name__ == '__main__':
