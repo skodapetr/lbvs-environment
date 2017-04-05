@@ -1,9 +1,11 @@
-## Datasets
-Datasets are not stored in the GitHub repository due to their size. 
-They can be downloaded using ```preparation/download.py``` Python 
-script.
+## Data directory
+Data are not stored in the GitHub repository due to their size. 
+They can be downloaded using ```scripts/download_data.py``` .
 
 ### Structure
+
+#### Datasets
+
 Once downloaded each dataset is store in a directory in this folder. 
 All datasets follow the same structure.
 
