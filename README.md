@@ -1,24 +1,35 @@
 # lbvs-environment
-Ligand-based virtual screening (LBVS) environment (LBVS-environment) is designed to support researchers in task of development and benchmarking of chemical representations. The process of ligand-based virtual screening is divided into several phases: data preparation, screening and evaluation. This environment consists of a set of scripts enabling easy implementation of the above mentioned steps.
+Ligand-based virtual screening (LBVS) environment (LBVS-environment) is 
+designed to support researchers in task of development and benchmarking of 
+chemical representations. The process of LBVS is divided into several phases: 
+* data preparation
+* screening 
+* evaluation. 
+This environment consists of a set of scripts enabling easy implementation 
+of the above mentioned steps.
 
-### Datasets preparation
-Benchmarking datasets and selections can be downloaded using the `preparation/download.py` script.
+## Usage examples 
 
-### Screening
-Given the method and specification of datasets performs a simulated LBVS.
+### Ligand-based virtual screening
+Benchmark performance of `tt_tanimoto` on the `01` collection.  
 
-### Evaluation
-Evaluates quality of the individual methods used in the screening phase.
-
-## Usage example
 ```
+cd scripts
 # Download datasets - Choose download all, when done exit the script.
-python preparation/download.py
+python download_data.py
 # Perform screening.
-cd screening
-python python_local.py -i ../data/datasets/10.1016%2Fj.ymeth.2014.11.015/selections/random_00_05_100_20_4900 -m ap/*
-cd ..
+python screen_localhost.py -c 01 -m tt/tt_tanimoto
 # Evaluate data.
-python evaluation/evaluation_local.py.py
+python evaluate_screening.py
+python export_results.py
 ```
 
+### Molecule export
+Export molecules (test, train, validation set) used in collection `01`.
+
+```
+cd scripts
+# Download datasets - Choose download all, when done exit the script.
+python download_data.py
+python export_molecules.py -c 01 -o ../molecule-export --flat --info
+```
