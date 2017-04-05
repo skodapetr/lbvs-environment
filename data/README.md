@@ -1,4 +1,4 @@
-## Data directory
+## data directory
 Data are not stored in the GitHub repository due to their size. 
 They can be downloaded using ```scripts/download_data.py``` .
 
