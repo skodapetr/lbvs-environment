@@ -21,6 +21,7 @@ def main():
     info = download_basic_info()
     options = ["Download concrete dataset molecules",
                "Download concrete dataset selections",
+               "Download collections",
                "Download all",
                "Exit"]
     while True:
@@ -30,8 +31,10 @@ def main():
         elif option == 1:
             download_selections(info)
         elif option == 2:
-            download_all(info)
+            download_collections()
         elif option == 3:
+            download_all(info)
+        elif option == 4:
             break
 
 
@@ -103,6 +106,13 @@ def download_selections(info):
             download_and_unpack(url, path)
 
 
+def download_collections():
+    url = BASE_URL + "/collections.zip"
+    path = os.path.dirname(os.path.realpath(__file__)) + "/../data/"
+    print(url, path)
+    download_and_unpack(url, path)
+
+
 def download_all(info):
     for item in info["datasets"]:
         # Download molecules.
@@ -115,6 +125,8 @@ def download_all(info):
             url = BASE_URL + item["ref"] + "/selections/" + \
                   selection + ".zip"
             download_and_unpack(url, path)
+    # Download collections
+    download_collections()
 
 
 def download_and_unpack(url, target_path):
@@ -126,7 +138,7 @@ def download_and_unpack(url, target_path):
     """
     # Prepare output and temp directory.
     temp_file_path = os.path.dirname(os.path.realpath(__file__)) + \
-                     "/temp/download.tmp"
+                     "/../data/temp/download.tmp"
     create_directory(target_path)
     create_directory(os.path.dirname(temp_file_path))
     # Print info.
