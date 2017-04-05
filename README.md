@@ -8,6 +8,11 @@ chemical representations. The process of LBVS is divided into several phases:
 This environment consists of a set of scripts enabling easy implementation 
 of the above mentioned steps.
 
+## Requirements and dependencies
+* RDKit
+* Python 3.5
+* utils library (not needed to download data and export molecules)
+
 ## Usage examples 
 
 ### Ligand-based virtual screening
