@@ -7,10 +7,11 @@ Usage example:
     python download_data.py
 """
 
+from __future__ import print_function
+
 import os
 import json
 import zipfile
-from urllib import request
 
 __license__ = "X11"
 
@@ -41,9 +42,20 @@ def main():
 def download_basic_info():
     print("Downloading basic info ... ", end="")
     url = BASE_URL + "/info.json"
-    info = json.loads(request.urlopen(url).read().decode("utf-8"))
+    info = json.loads(open_connection(url).read().decode("utf-8"))
     print("done")
     return info
+
+
+def open_connection(url):
+    import platform
+    major_version = platform.python_version_tuple()[0]
+    if major_version == '2':
+        import urllib
+        return urllib.urlopen(url)
+    else:
+        from urllib import request
+        return request.urlopen(url)
 
 
 def menu_select_items(items, single=True):
@@ -146,7 +158,7 @@ def download_and_unpack(url, target_path):
     print(" ->", target_path)
     # Download.
     print(" Downloading ", end="", flush=True)
-    with request.urlopen(url) as response, \
+    with open_connection(url) as response, \
             open(temp_file_path, "wb") as output_stream:
         total_size = int(response.headers["Content-Length"])
         # Download with progress bar.
