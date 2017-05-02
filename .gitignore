@@ -6,3 +6,7 @@
 
 # Python cache.
 *.pyc
+
+# Executable files.
+*.bat
+*.sh
