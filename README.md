@@ -4,7 +4,8 @@ designed to support researchers in task of development and benchmarking of
 chemical representations. The process of LBVS is divided into several phases: 
 * data preparation
 * screening 
-* evaluation. 
+* evaluation.
+
 This environment consists of a set of scripts enabling easy implementation 
 of the above mentioned steps.
 
