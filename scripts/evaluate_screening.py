@@ -13,13 +13,14 @@ import logging
 
 from rdkit.ML.Scoring import Scoring
 
-import eu_skodape_libs.core as core_libs
+from libs import core as core_libs
 
 __license__ = "X11"
 
 
 def main():
     core_libs.init_logging()
+    core_libs.create_directory(get_data_directory() + "/evaluation")
     for screen_entry in list_groups():
         eval_path = get_evaluation_path(screen_entry)
         if os.path.exists(eval_path):
@@ -63,7 +64,6 @@ def evaluate(screen_entry, output_path):
                  screen_entry["dataset"],
                  screen_entry["selection"],
                  screen_entry["group"])
-    core_libs.create_directory(output_path)
     ligand_names, decoys_names = load_definition(screen_entry)
     results = []
     for screen_output in list_screen_outputs(screen_entry):

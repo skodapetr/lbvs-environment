@@ -12,7 +12,8 @@ of the above mentioned steps.
 ## Requirements and dependencies
 * RDKit
 * Python 3.5
-* utils library (not needed to download data and export molecules)
+
+The `download_data.py` can be executed also with Python 2.6. 
 
 ## Usage examples 
 

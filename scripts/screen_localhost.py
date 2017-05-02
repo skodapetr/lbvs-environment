@@ -13,7 +13,7 @@ import logging
 import argparse
 
 from libs import data
-import eu_skodape_libs.core as core_libs
+from libs import core as core_libs
 
 __license__ = "X11"
 
@@ -98,7 +98,7 @@ def screen_dataset(method, dataset_reference, update_existing,
 def screen_split(method, dataset_reference, update_existing,
                  include_additional_info, instance_path):
     output_root_directory = os.path.dirname(os.path.realpath(__file__)) + \
-                            "/../../data/screening/"
+                            "/../data/screening/"
     instance_data = core_libs.read_json(instance_path)
 
     method_id = method.METADATA["id"]

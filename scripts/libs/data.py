@@ -1,19 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Provide ways to loading molecules for the test instances.
+"""
+Provide ways to loading molecules for the test instances.
 """
 
 import os
 import re
 
-__author__ = 'Petr Škoda'
 __license__ = 'X11'
-__email__ = 'skoda@ksi.mff.cuni.cz'
 
 __DATA_DIRECTORY = os.path.dirname(os.path.realpath(__file__)) + '/../../data/'
-
 __DATASET_DIRECTORY = __DATA_DIRECTORY + 'datasets/'
-
 __MOLECULES_FILE_CACHE = {}
 
 
@@ -212,42 +209,6 @@ def list_collections(as_path=False):
         return os.listdir(__DATA_DIRECTORY + '/collections/')
 
 
-def __select_collection(dataset, default_collection=None):
-    """Select collection, may ask for user input.
-
-    :param dataset:
-    :param default_collection:
-    :return:
-    """
-    if default_collection is not None:
-        return default_collection
-    print('dataset', dataset)
-    return menu_select_items(list_selections(dataset))
-
-
-def menu_select_items(items, single):
-    print("Select single value:")
-    counter = 0
-    for name in items:
-        counter += 1
-        print(" ", counter, ") ", name, sep="")
-    while True:
-        print(" > ", end="")
-        try:
-            value = input()
-            if single:
-                value = [value]
-            value = [int(item) - 1 for item in value]
-            # Check that all indexes are in bounds.
-            for index in value:
-                if index < 0 or index >= len(items):
-                    raise IndexError()
-        except:
-            print("Invalid input!")
-            continue
-        return value
-
-
 def list_datasets_for_collection(collection, default_selection=None):
     """
 
@@ -263,13 +224,7 @@ def list_datasets_for_collection(collection, default_selection=None):
         with open(collection_dir + name) as stream:
             for line in stream:
                 line = line.rstrip().split(',')
-                if line[1] == '?':
-                    default_selection = line[1] = __select_collection(
-                        line[0], default_selection)
                 datasets_in_collection.append([line[0], line[1], line[2]])
-    # TODO We can select collection that is not presented in all dataset.
-    # We should build a list of all possible collections (by intersection)
-    # and let user pick at the end.
     return result
 
 
