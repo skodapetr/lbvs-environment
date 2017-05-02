@@ -127,8 +127,7 @@ def execute_screening(method, molecules, output_path,
                  instance_data["metadata"]["group"],
                  instance_data["metadata"]["instance"])
     model, model_info = method.create_model(
-        molecules.train["actives"], molecules.train["inactives"],
-        molecules.validation["actives"], molecules.validation["inactives"])
+        molecules.train["actives"], molecules.train["inactives"])
     scores = []
     for molecule in molecules.test:
         computed_score = method.compute_score(model, molecule)

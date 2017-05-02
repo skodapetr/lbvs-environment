@@ -34,10 +34,6 @@ class Molecules(object):
             "actives": [],
             "inactives": []
         }
-        self.validation = {
-            "actives": [],
-            "inactives": []
-        }
 
 
 def list_datasets(as_path=False):
@@ -152,11 +148,6 @@ def load_molecules(dataset_reference, instance_data):
         result.train["inactives"].append(molecules[item['name']])
     for item in instance_data['data']['train']['ligands']:
         result.train["actives"].append(molecules[item['name']])
-    if "validation" in instance_data['data']:
-        for item in instance_data['data']['validation']['decoys']:
-            result.validation["inactives"].append(molecules[item['name']])
-        for item in instance_data['data']['validation']['ligands']:
-            result.validation["actives"].append(molecules[item['name']])
 
     return result
 

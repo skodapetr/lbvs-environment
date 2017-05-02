@@ -23,10 +23,9 @@ def _compute_similarity(left, right):
     return DataStructs.TanimotoSimilarity(left, right)
 
 
-def create_model(train_ligands, train_decoys,
-                 validation_ligands, validation_decoys):
+def create_model(train_ligands, train_decoys):
     model = []
-    for molecule in train_ligands + validation_ligands:
+    for molecule in train_ligands:
         model.append({
             "name": molecule.GetProp("_Name"),
             "fingerprint": _compute_fingerprint(molecule)
