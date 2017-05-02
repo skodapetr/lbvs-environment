@@ -173,9 +173,9 @@ def extract_instance_sdf(reference, instance_file, output_path,
 
 def open_write_stream(path, gzip_output):
     if gzip_output:
-        return gzip.open(path + ".gz")
+        return gzip.open(path + ".gz", "w")
     else:
-        return open(path)
+        return open(path, "w")
 
 
 class MoleculeSource(object):

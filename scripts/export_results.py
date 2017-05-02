@@ -88,6 +88,12 @@ class MethodRowWriter:
 
 
 class MethodColumnWriter:
+    def __init__(self):
+        self.methods = []
+        self.data = []
+        self.lines = []
+        self.writer = None
+
     def extract_method_names(self):
         names = set()
         for item in self.data:
@@ -104,10 +110,10 @@ class MethodColumnWriter:
     def evaluation_to_record(self, evaluation):
         data = evaluation["data"]
         metadata = evaluation["metadata"]
-        id = metadata["dataset"] + metadata["selection"] + \
+        record_id = metadata["dataset"] + metadata["selection"] + \
              metadata["group"] + metadata["instance"]
         return [
-            id,
+            record_id,
             metadata["method"],
             metadata["dataset"],
             metadata["selection"],
@@ -135,10 +141,10 @@ class MethodColumnWriter:
     def prepare_lines(self):
         lines = {}
         for item in self.data:
-            id = item[0]
-            if id not in lines:
-                lines[id] = self.create_line(item)
-            line = lines[id]
+            line_id = item[0]
+            if line_id not in lines:
+                lines[line_id] = self.create_line(item)
+            line = lines[line_id]
             index = self.methods.index(item[1])
             # 4 is offset (dataset, selection, group, instance)
             line[4 + 2 * index] = item[6]
