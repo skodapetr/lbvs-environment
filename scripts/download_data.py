@@ -90,7 +90,7 @@ def download_molecules(info):
     datasets = menu_select_datasets(info, False)
     for item in datasets:
         url = BASE_URL + item["ref"] + "/molecules/sdf.zip"
-        path = get_dataset_root() + item["dir"] + "/molecules/"
+        path = get_dataset_root() + item["dir"] + "/molecules/sdf/"
         download_and_unpack(url, path)
 
 
