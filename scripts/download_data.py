@@ -15,7 +15,7 @@ import zipfile
 
 __license__ = "X11"
 
-BASE_URL = "http://siret.ms.mff.cuni.cz/skoda/vs-datasets/"
+BASE_URL = "https://skoda.projekty.ms.mff.cuni.cz/vs-datasets/"
 
 
 def main():
